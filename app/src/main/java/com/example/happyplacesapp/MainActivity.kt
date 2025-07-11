@@ -264,6 +264,15 @@ fun OsmdroidMapView(viewModel: MapViewModel) {
                             Column(modifier = Modifier.padding(vertical = 4.dp)) {
                                 Text(marker.item.title, style = MaterialTheme.typography.titleMedium)
                                 Text(marker.item.snippet, style = MaterialTheme.typography.bodySmall)
+                                if (marker.imageUri.isNotBlank()) {
+                                    Image(
+                                        painter = rememberAsyncImagePainter(marker.imageUri),
+                                        contentDescription = "Marker-Bild",
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -322,7 +331,10 @@ fun OsmdroidMapView(viewModel: MapViewModel) {
                         Image(
                             painter = rememberAsyncImagePainter(selectedImageUri.value),
                             contentDescription = "Marker-Bild",
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 180.dp)
+                                .padding(top = 8.dp)
                         )
                     }
                 }
