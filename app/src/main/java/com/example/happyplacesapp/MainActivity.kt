@@ -318,7 +318,7 @@ fun OsmdroidMapView(viewModel: MapViewModel) {
         )
     }
 
-    // Marker bearbeiten
+    // Marker bearbeiten1
     if (openEditDialog.value && selectedOverlayItem.value != null) {
         AlertDialog(
             onDismissRequest = { openEditDialog.value = false },
