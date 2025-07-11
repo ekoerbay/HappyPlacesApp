@@ -10,11 +10,13 @@ import android.os.Bundle
 import android.os.Looper
 import android.preference.PreferenceManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -22,33 +24,27 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
-
-
-
-import org.osmdroid.api.IMapController
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.happyplacesapp.ui.theme.HappyPlacesAppTheme
+import org.osmdroid.api.IMapController
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
-import androidx.compose.foundation.Image
-import coil.compose.rememberAsyncImagePainter
 import org.osmdroid.views.overlay.ItemizedIconOverlay
 import org.osmdroid.views.overlay.ItemizedOverlayWithFocus
 import org.osmdroid.views.overlay.MapEventsOverlay
@@ -56,14 +52,6 @@ import org.osmdroid.views.overlay.OverlayItem
 import org.osmdroid.views.overlay.compass.CompassOverlay
 import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
-
 
 
 // ViewModel hält hier alle Marker-Daten und Methoden, um Marker hinzuzufügen und zu bearbeiten.
@@ -89,15 +77,16 @@ class MapViewModel : ViewModel() {
 }
 
 
-
-
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val internetPermission = Manifest.permission.INTERNET
-        if (ContextCompat.checkSelfPermission(this, internetPermission) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                internetPermission
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(this, arrayOf(internetPermission), 0)
         }
 
@@ -111,11 +100,17 @@ class MainActivity : ComponentActivity() {
             ActivityCompat.requestPermissions(this, locationPermissions, 1)
         }
 
-        Configuration.getInstance().load(applicationContext, PreferenceManager.getDefaultSharedPreferences(applicationContext))
+        Configuration.getInstance().load(
+            applicationContext,
+            PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        )
         Configuration.getInstance().userAgentValue = "HappyPlacesApp"
 
         setContent {
-            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
+            ) {
                 val viewModel: MapViewModel = viewModel()
                 OsmdroidMapView(viewModel)
             }
@@ -154,7 +149,8 @@ fun OsmdroidMapView(viewModel: MapViewModel) {
                     rotationGestureOverlay.isEnabled = true
                     overlays.add(rotationGestureOverlay)
 
-                    val compassOverlay = CompassOverlay(ctx, InternalCompassOrientationProvider(ctx), this)
+                    val compassOverlay =
+                        CompassOverlay(ctx, InternalCompassOrientationProvider(ctx), this)
                     compassOverlay.enableCompass()
                     overlays.add(compassOverlay)
 
@@ -200,7 +196,10 @@ fun OsmdroidMapView(viewModel: MapViewModel) {
                 val provider = LocationManager.GPS_PROVIDER
 
                 if (
-                    ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                    ActivityCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) ==
                     PackageManager.PERMISSION_GRANTED
                 ) {
                     locationManager.requestSingleUpdate(provider, object : LocationListener {
@@ -209,7 +208,13 @@ fun OsmdroidMapView(viewModel: MapViewModel) {
                             mapViewRef.value?.controller?.setCenter(geoPoint)
                         }
 
-                        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+                        override fun onStatusChanged(
+                            provider: String?,
+                            status: Int,
+                            extras: Bundle?
+                        ) {
+                        }
+
                         override fun onProviderEnabled(provider: String) {}
                         override fun onProviderDisabled(provider: String) {}
                     }, Looper.getMainLooper())
@@ -222,7 +227,6 @@ fun OsmdroidMapView(viewModel: MapViewModel) {
             Text("Mein Standort")
         }
     }
-
 
 
     // Tutorial-Overlay: Nur anzeigen, wenn noch kein Pin gesetzt wurde
@@ -262,8 +266,14 @@ fun OsmdroidMapView(viewModel: MapViewModel) {
                     } else {
                         viewModel.items.forEach { marker ->
                             Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                                Text(marker.item.title, style = MaterialTheme.typography.titleMedium)
-                                Text(marker.item.snippet, style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    marker.item.title,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    marker.item.snippet,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
                                 if (marker.imageUri.isNotBlank()) {
                                     Image(
                                         painter = rememberAsyncImagePainter(marker.imageUri),
@@ -285,12 +295,6 @@ fun OsmdroidMapView(viewModel: MapViewModel) {
             }
         )
     }
-
-
-
-
-
-
 
 
     // Neuen Marker hinzufügen
@@ -325,8 +329,14 @@ fun OsmdroidMapView(viewModel: MapViewModel) {
             title = { Text("Edit Marker") },
             text = {
                 Column {
-                    TextField(value = editTitle.value, onValueChange = { editTitle.value = it }, label = { Text("Title") })
-                    TextField(value = editDescription.value, onValueChange = { editDescription.value = it }, label = { Text("Description") })
+                    TextField(
+                        value = editTitle.value,
+                        onValueChange = { editTitle.value = it },
+                        label = { Text("Title") })
+                    TextField(
+                        value = editDescription.value,
+                        onValueChange = { editDescription.value = it },
+                        label = { Text("Description") })
                     if (selectedImageUri.value.isNotBlank()) {
                         Image(
                             painter = rememberAsyncImagePainter(selectedImageUri.value),
@@ -343,7 +353,8 @@ fun OsmdroidMapView(viewModel: MapViewModel) {
                 TextButton(onClick = {
                     val oldItem = selectedOverlayItem.value
                     if (oldItem != null) {
-                        val newItem = OverlayItem(editTitle.value, editDescription.value, oldItem.point)
+                        val newItem =
+                            OverlayItem(editTitle.value, editDescription.value, oldItem.point)
                         val newMarkerData = MarkerData(newItem, selectedImageUri.value)
                         val oldMarkerData = viewModel.items.find { it.item == oldItem }
                         if (oldMarkerData != null) {
@@ -373,6 +384,10 @@ fun OsmdroidMapView(viewModel: MapViewModel) {
             }
         )
     }
+}
+
+private fun ColumnScope.rememberAsyncImagePainter(string: String): Painter {
+    return TODO()
 }
 
 
@@ -433,11 +448,25 @@ fun AlertDialogExample(
         title = { Text("Add Place") },
         text = {
             Column {
-                TextField(value = titleName.value, onValueChange = { titleName.value = it }, placeholder = { Text("Place Name") }, modifier = Modifier.fillMaxWidth())
-                TextField(value = description.value, onValueChange = { description.value = it }, placeholder = { Text("Description") }, modifier = Modifier.fillMaxWidth())
+                TextField(
+                    value = titleName.value,
+                    onValueChange = { titleName.value = it },
+                    placeholder = { Text("Place Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                TextField(
+                    value = description.value,
+                    onValueChange = { description.value = it },
+                    placeholder = { Text("Description") },
+                    modifier = Modifier.fillMaxWidth()
+                )
                 TextButton(onClick = { imagePickerLauncher.launch("image/*") }) { Text("Bild auswählen") }
                 if (imageUri.value.isNotBlank()) {
-                    Image(painter = rememberAsyncImagePainter(imageUri.value), contentDescription = "Ausgewähltes Bild", modifier = Modifier.fillMaxWidth())
+                    Image(
+                        painter = rememberAsyncImagePainter(imageUri.value),
+                        contentDescription = "Ausgewähltes Bild",
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         },
